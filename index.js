@@ -16,6 +16,7 @@ const morgan = require("morgan");
 // Importing routes
 const userRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
+const postRouter = require("./routes/posts");
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use(morgan("common"));
 
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/posts", postRouter);
 
 app.listen(3000, () => {
   console.log("Backend server is running on port 3000");
