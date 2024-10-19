@@ -55,6 +55,19 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Get all users
+router.get("/", async (req, res) => {
+  const query = req.query.new;
+  try {
+    const users = query
+      ? await User.find().sort({ _id: -1 }).limit(10)
+      : await User.find();
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 // Follow a user
 router.put("/:id/follow", async (req, res) => {
   // If the user is not the same as the one who is following

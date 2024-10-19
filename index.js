@@ -31,7 +31,7 @@ app.use(morgan("common"));
 
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/posts", postRouter);
+app.use("/api/post", postRouter);
 
 app.listen(3000, () => {
   console.log("Backend server is running on port 3000");
