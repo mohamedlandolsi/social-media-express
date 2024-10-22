@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors');
 const app = express();
 
 // Mongoose is a MongoDB object modeling tool designed to work in an asynchronous environment
@@ -12,6 +13,9 @@ const helmet = require("helmet");
 
 // Morgan is a middleware that logs HTTP requests
 const morgan = require("morgan");
+
+// Use CORS middleware
+app.use(cors());
 
 // Importing routes
 const userRouter = require("./routes/users");
