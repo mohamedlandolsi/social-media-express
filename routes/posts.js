@@ -1,10 +1,29 @@
 const router = require("express").Router();
 const Post = require("../models/Post");
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
-// Create a post
-router.post("/", async (req, res) => {
-  const newPost = new Post(req.body);
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Middleware to verify token (protects routes)
+const verifyToken = (req, res, next) => {
+  const token = req.header("Authorization");
+  if (!token) return res.status(401).json("Access Denied");
+
+  try {
+    const verified = jwt.verify(token.split(" ")[1], JWT_SECRET);
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(400).json("Invalid Token");
+  }
+};
+
+// Create a post (Protected route)
+router.post("/", verifyToken, async (req, res) => {
+  const newPost = new Post({ ...req.body, userId: req.user.id }); // Set the userId from the verified token
   try {
     const savedPost = await newPost.save();
     res.status(200).json(savedPost);
@@ -13,18 +32,16 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Update a post
-router.put("/:id", async (req, res) => {
+// Update a post (Protected route)
+router.put("/:id", verifyToken, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
 
-    // Check if the post exists before proceeding
     if (!post) {
       return res.status(404).json("Post not found");
     }
 
-    // Check if the post is created by the user
-    if (post.userId === req.body.userId) {
+    if (post.userId === req.user.id) {
       await post.updateOne({ $set: req.body });
       res.status(200).json("The post has been updated");
     } else {
@@ -35,18 +52,16 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete a post
-router.delete("/:id", async (req, res) => {
+// Delete a post (Protected route)
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
 
-    // Check if the post exists before proceeding
     if (!post) {
       return res.status(404).json("Post not found");
     }
 
-    // Check if the post is created by the user
-    if (post.userId === req.body.userId) {
+    if (post.userId === req.user.id) {
       await post.deleteOne();
       res.status(200).json("The post has been deleted");
     } else {
@@ -57,7 +72,28 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Get a post
+// Like/Dislike a post (Protected route)
+router.put("/:id/like", verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json("Post not found");
+    }
+
+    if (!post.likes.includes(req.user.id)) {
+      await post.updateOne({ $push: { likes: req.user.id } });
+      res.status(200).json("The post has been liked");
+    } else {
+      await post.updateOne({ $pull: { likes: req.user.id } });
+      res.status(200).json("The post has been disliked");
+    }
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Get a post (Public route)
 router.get("/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -70,33 +106,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Like/Dislike a post
-router.put("/:id/like", async (req, res) => {
+// Get timeline posts (Protected route)
+router.get("/timeline/all", verifyToken, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-
-    // Check if the post exists before proceeding
-    if (!post) {
-      return res.status(404).json("Post not found");
-    }
-
-    // Check if the user has already liked the post
-    if (!post.likes.includes(req.body.userId)) {
-      await post.updateOne({ $push: { likes: req.body.userId } });
-      res.status(200).json("The post has been liked");
-    } else {
-      await post.updateOne({ $pull: { likes: req.body.userId } });
-      res.status(200).json("The post has been disliked");
-    }
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
-
-// Get timeline posts (Posts of the following users)
-router.get("/timeline/all", async (req, res) => {
-  try {
-    const currentUser = await User.findById(req.body.userId);
+    const currentUser = await User.findById(req.user.id); // Using the userId from the verified token
     const userPosts = await Post.find({ userId: currentUser._id });
     const followingsPosts = await Promise.all(
       currentUser.followings.map((followingId) => {
