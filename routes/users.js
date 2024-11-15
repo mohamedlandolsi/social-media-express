@@ -6,7 +6,6 @@ require('dotenv').config();
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
-console.log(JWT_SECRET);
 
 // Middleware to verify token (protects routes)
 const verifyToken = (req, res, next) => {

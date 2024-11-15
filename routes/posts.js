@@ -2,7 +2,7 @@ const router = require("express").Router();
 const Post = require("../models/Post");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
+require("dotenv").config();
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -117,6 +117,24 @@ router.get("/timeline/all", verifyToken, async (req, res) => {
       })
     );
     res.json(userPosts.concat(...followingsPosts));
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Get all posts by a specific user (Protected route)
+router.get("/user/:userId", verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.userId; // Extract the userId from the request parameters
+
+    // Find all posts where userId matches the specified user
+    const userPosts = await Post.find({ userId });
+
+    if (userPosts.length === 0) {
+      return res.status(404).json("No posts found for this user");
+    }
+
+    res.status(200).json(userPosts);
   } catch (err) {
     res.status(500).json(err);
   }

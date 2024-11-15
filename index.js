@@ -1,5 +1,5 @@
 const express = require("express");
-const cors = require('cors');
+const cors = require("cors");
 const app = express();
 
 // Mongoose is a MongoDB object modeling tool designed to work in an asynchronous environment
@@ -24,9 +24,12 @@ const postRouter = require("./routes/posts");
 
 dotenv.config();
 
-mongoose.connect(process.env.MONGO_URL).then(() => {
-  console.log("Connected to MongoDB");
-});
+mongoose
+  .connect(process.env.MONGO_URL)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => console.log("MongoDB connection error:", err));
 
 // Middlewares
 app.use(express.json());
