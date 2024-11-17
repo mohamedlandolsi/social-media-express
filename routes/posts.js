@@ -23,7 +23,14 @@ const verifyToken = (req, res, next) => {
 
 // Create a post (Protected route)
 router.post("/", verifyToken, async (req, res) => {
-  const newPost = new Post({ ...req.body, userId: req.user.id }); // Set the userId from the verified token
+  const { title, category } = req.body;
+
+  // Validate title and category
+  if (!title || !category) {
+    return res.status(400).json("Title and category are required");
+  }
+
+  const newPost = new Post({ ...req.body, userId: req.user.id });
   try {
     const savedPost = await newPost.save();
     res.status(200).json(savedPost);
@@ -34,6 +41,8 @@ router.post("/", verifyToken, async (req, res) => {
 
 // Update a post (Protected route)
 router.put("/:id", verifyToken, async (req, res) => {
+  const { title, category } = req.body;
+
   try {
     const post = await Post.findById(req.params.id);
 
@@ -42,6 +51,14 @@ router.put("/:id", verifyToken, async (req, res) => {
     }
 
     if (post.userId === req.user.id) {
+      // Validate title and category if they are being updated
+      if (title !== undefined && !title.trim()) {
+        return res.status(400).json("Title cannot be empty");
+      }
+      if (category !== undefined && !category.trim()) {
+        return res.status(400).json("Category cannot be empty");
+      }
+
       await post.updateOne({ $set: req.body });
       res.status(200).json("The post has been updated");
     } else {
@@ -117,6 +134,24 @@ router.get("/timeline/all", verifyToken, async (req, res) => {
       })
     );
     res.json(userPosts.concat(...followingsPosts));
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Get all posts by a specific user (Protected route)
+router.get("/user/:userId", verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.userId; // Extract the userId from the request parameters
+
+    // Find all posts where userId matches the specified user
+    const userPosts = await Post.find({ userId });
+
+    if (userPosts.length === 0) {
+      return res.status(404).json("No posts found for this user");
+    }
+
+    res.status(200).json(userPosts);
   } catch (err) {
     res.status(500).json(err);
   }
