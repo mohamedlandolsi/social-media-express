@@ -9,7 +9,7 @@ const PostSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      max: 100, // Set a maximum length for the title
+      max: 100,
     },
     description: {
       type: String,
@@ -25,7 +25,6 @@ const PostSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Technology", "Health", "Lifestyle", "Education", "Other"], // Example categories
       default: "Other",
     },
   },
