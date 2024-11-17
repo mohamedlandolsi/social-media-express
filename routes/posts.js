@@ -2,7 +2,7 @@ const router = require("express").Router();
 const Post = require("../models/Post");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
+require("dotenv").config();
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
