@@ -110,7 +110,8 @@ router.put("/:id/like", verifyToken, async (req, res) => {
   }
 });
 
-// Get a post (Public route)
+/*
+// Get a post (Public route) (ERROR HERE)
 router.get("/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -122,6 +123,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json(err);
   }
 });
+*/
 
 // Get timeline posts (Protected route)
 router.get("/timeline/all", verifyToken, async (req, res) => {
@@ -154,6 +156,40 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
     res.status(200).json(userPosts);
   } catch (err) {
     res.status(500).json(err);
+  }
+});
+
+// Search posts (Public route)
+router.get("/search" , verifyToken , async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || typeof query !== "string") {
+    return res.status(400).json("Invalid or missing query string");
+  }
+
+  console.log("Query received:", query); // Log the incoming query
+
+  try {
+    const searchCriteria = {
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { category: { $regex: query, $options: "i" } }
+      ]
+    };
+
+    console.log("Executing search query:", searchCriteria); // Log the query object
+
+    const posts = await Post.find(searchCriteria).select("-_id"); // Exclude _id
+    console.log("Found posts:", posts); // Log found posts or an empty array if no posts found
+
+    res.status(200).json(posts);
+  } catch (err) {
+    console.error("Error during search:", err.stack); // Log the full error stack
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 });
 
