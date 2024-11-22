@@ -159,7 +159,7 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
   }
 });
 
-// Search posts (Public route)
+// Search posts (Protected route)
 router.get("/search" , verifyToken , async (req, res) => {
   const { query } = req.query;
 
