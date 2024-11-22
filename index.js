@@ -17,6 +17,9 @@ const morgan = require("morgan");
 // Use CORS middleware
 app.use(cors());
 
+// Serve static files from the uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Importing routes
 const userRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
