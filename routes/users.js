@@ -2,7 +2,9 @@ const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+require("dotenv").config();
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -47,6 +49,29 @@ router.put("/:id", verifyToken, async (req, res) => {
     return res.status(403).json("You can only update your account!");
   }
 });
+
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("profilePicture"),
+  async (req, res) => {
+    if (req.user.id === req.params.id || req.user.isAdmin) {
+      try {
+        const updateData = { ...req.body };
+        if (req.file) {
+          updateData.profilePicture = req.file.path; // Save file path or other data
+        }
+
+        await User.findByIdAndUpdate(req.params.id, { $set: updateData });
+        res.status(200).json("Account has been updated");
+      } catch (err) {
+        return res.status(500).json(err);
+      }
+    } else {
+      return res.status(403).json("You can only update your account!");
+    }
+  }
+);
 
 // Delete User (Protected route)
 router.delete("/:id", verifyToken, async (req, res) => {
@@ -134,5 +159,53 @@ router.put("/:id/unfollow", verifyToken, async (req, res) => {
     res.status(403).json("You can't unfollow yourself");
   }
 });
+
+// Update Profile Picture
+router.put(
+  "/:id/profilePicture",
+  verifyToken,
+  upload.single("profilePicture"),
+  async (req, res) => {
+    if (req.user.id === req.params.id || req.user.isAdmin) {
+      try {
+        const updateData = { ...req.body };
+        if (req.file) {
+          updateData.profilePicture = req.file.path; // Save file path or other data
+        }
+
+        await User.findByIdAndUpdate(req.params.id, { $set: updateData });
+        res.status(200).json("Account has been updated");
+      } catch (err) {
+        return res.status(500).json(err);
+      }
+    } else {
+      return res.status(403).json("You can only update your account!");
+    }
+  }
+);
+
+// Update Cover Picture
+router.put(
+  "/:id/coverPicture",
+  verifyToken,
+  upload.single("coverPicture"),
+  async (req, res) => {
+    if (req.user.id === req.params.id || req.user.isAdmin) {
+      try {
+        const updateData = { ...req.body };
+        if (req.file) {
+          updateData.coverPicture = req.file.path; // Save file path or other data
+        }
+
+        await User.findByIdAndUpdate(req.params.id, { $set: updateData });
+        res.status(200).json("Account has been updated");
+      } catch (err) {
+        return res.status(500).json(err);
+      }
+    } else {
+      return res.status(403).json("You can only update your account!");
+    }
+  }
+);
 
 module.exports = router;
