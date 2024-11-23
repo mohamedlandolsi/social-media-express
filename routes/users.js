@@ -23,6 +23,40 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+//Search user
+router.get("/search", verifyToken, async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || typeof query !== "string") {
+    return res.status(400).json("Invalid or missing query string");
+  }
+
+  console.log("User search query received:", query); // Log the incoming query
+
+  try {
+    // Define search criteria for users
+    const searchCriteria = {
+      $or: [
+        { username: { $regex: query, $options: "i" } }    // Case-insensitive search for name
+      ]
+    };
+
+    console.log("Executing user search query:", searchCriteria); // Log the query object
+
+    // Find users matching the criteria
+    const users = await User.find(searchCriteria).select("-password -_id"); // Exclude password and _id
+    console.log("Found users:", users); // Log found users or an empty array if no users found
+
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("Error during user search:", err.stack); // Log the full error stack
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
+  }
+});
+
 // Update user (Protected route)
 router.put("/:id", verifyToken, async (req, res) => {
   if (req.user.id === req.params.id || req.user.isAdmin) {
@@ -207,5 +241,7 @@ router.put(
     }
   }
 );
+
+
 
 module.exports = router;
