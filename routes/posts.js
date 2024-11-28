@@ -238,50 +238,54 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
 });
 */
 
-// Search posts by followers (Protected route)
+// Search posts by followers (with advanced filtering) - Protected route
 router.get("/search", verifyToken, async (req, res) => {
-  const { query } = req.query;
+  const { query, filter, sort } = req.query;
 
   if (!query || typeof query !== "string") {
     return res.status(400).json("Invalid or missing query string");
   }
 
-  console.log("Query received:", query); // Log the incoming query
-
   try {
-    // Fetch the current user and their followings
     const currentUser = await User.findById(req.user.id);
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("Current user:", currentUser); // Log current user details
-
-    // Define search criteria with the query
-    const searchCriteria = {
+    let searchCriteria = {
       $or: [
         { title: { $regex: query, $options: "i" } },
         { description: { $regex: query, $options: "i" } },
         { category: { $regex: query, $options: "i" } },
       ],
-      userId: { $in: [currentUser._id, ...currentUser.followings] }, // Filter by current user and followings
     };
 
-    console.log("Executing search query with criteria:", searchCriteria); // Log the query object
+    if (filter === "exclude-my-posts") {
+      searchCriteria.userId = { $in: currentUser.followings };
+    } else if (filter === "only-my-posts") {
+      searchCriteria.userId = currentUser._id;
+    } else {
+      searchCriteria.userId = { $in: [currentUser._id, ...currentUser.followings] };
+    }
 
-    // Find posts matching the criteria
-    const posts = await Post.find(searchCriteria).select("-_id"); // Exclude _id
-    console.log("Found posts:", posts); // Log found posts or an empty array if no posts found
+    // Sort logic
+    let sortOption = {};
+    if (sort === "username") {
+      sortOption = { username: 1 }; // Ascending username
+    } else if (sort === "date") {
+      sortOption = { createdAt: -1 }; // Descending date
+    } else {
+      sortOption = { title: 1 }; // Default: ascending title
+    }
 
+    const posts = await Post.find(searchCriteria).sort(sortOption).select("-_id");
     res.status(200).json(posts);
   } catch (err) {
-    console.error("Error during search:", err.stack); // Log the full error stack
-    res.status(500).json({
-      message: "Internal server error",
-      error: err.message,
-    });
+    res.status(500).json({ message: "Internal server error", error: err.message });
   }
 });
+
+
 
 // Add a comment to a post (Protected route)
 router.post("/:id/comment", verifyToken, async (req, res) => {
