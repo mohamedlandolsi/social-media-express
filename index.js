@@ -17,8 +17,17 @@ const morgan = require("morgan");
 // Use CORS middleware
 app.use(cors());
 
+// Allow CORS from specific origin
+const corsOptions = {
+  origin: "http://localhost:4200", // Replace with your Angular app's URL
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true, // Allow cookies or auth headers
+};
+
+app.use(cors(corsOptions));
+
 // Serve static files from the uploads directory
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 
 // Importing routes
 const userRouter = require("./routes/users");

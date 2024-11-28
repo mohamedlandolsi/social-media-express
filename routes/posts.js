@@ -2,6 +2,8 @@ const router = require("express").Router();
 const Post = require("../models/Post");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
 require("dotenv").config();
 
 // JWT Secret
@@ -21,8 +23,35 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+// Configure Multer for image upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads"); // Save files to the "uploads" directory
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Unique file name
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const fileTypes = /jpeg|jpg|png|gif/;
+    const extname = fileTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimeType = fileTypes.test(file.mimetype);
+
+    if (extname && mimeType) {
+      return cb(null, true);
+    } else {
+      cb("Error: Images Only!");
+    }
+  },
+});
+
 // Create a post (Protected route)
-router.post("/", verifyToken, async (req, res) => {
+router.post("/", verifyToken, upload.single("image"), async (req, res) => {
   const { title, category } = req.body;
 
   // Validate title and category
@@ -30,7 +59,14 @@ router.post("/", verifyToken, async (req, res) => {
     return res.status(400).json("Title and category are required");
   }
 
-  const newPost = new Post({ ...req.body, userId: req.user.id });
+  const imagePath = req.file ? `/uploads/${req.file.filename}` : null; // Save image path if uploaded
+
+  const newPost = new Post({
+    ...req.body,
+    userId: req.user.id,
+    image: imagePath,
+  });
+
   try {
     const savedPost = await newPost.save();
     res.status(200).json(savedPost);
@@ -40,7 +76,7 @@ router.post("/", verifyToken, async (req, res) => {
 });
 
 // Update a post (Protected route)
-router.put("/:id", verifyToken, async (req, res) => {
+router.put("/:id", verifyToken, upload.single("image"), async (req, res) => {
   const { title, category } = req.body;
 
   try {
@@ -51,7 +87,15 @@ router.put("/:id", verifyToken, async (req, res) => {
     }
 
     if (post.userId === req.user.id) {
-      // Validate title and category if they are being updated
+      // Update post data
+      const updates = { ...req.body };
+
+      // Check for image upload
+      if (req.file) {
+        updates.image = `/uploads/${req.file.filename}`;
+      }
+
+      // Validate title and category if being updated
       if (title !== undefined && !title.trim()) {
         return res.status(400).json("Title cannot be empty");
       }
@@ -59,7 +103,7 @@ router.put("/:id", verifyToken, async (req, res) => {
         return res.status(400).json("Category cannot be empty");
       }
 
-      await post.updateOne({ $set: req.body });
+      await post.updateOne({ $set: updates });
       res.status(200).json("The post has been updated");
     } else {
       res.status(403).json("You can only update your own post");
@@ -218,7 +262,7 @@ router.get("/search", verifyToken, async (req, res) => {
       $or: [
         { title: { $regex: query, $options: "i" } },
         { description: { $regex: query, $options: "i" } },
-        { category: { $regex: query, $options: "i" } }
+        { category: { $regex: query, $options: "i" } },
       ],
       userId: { $in: [currentUser._id, ...currentUser.followings] }, // Filter by current user and followings
     };
@@ -238,6 +282,5 @@ router.get("/search", verifyToken, async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
