@@ -27,6 +27,27 @@ const PostSchema = new mongoose.Schema(
       required: true,
       default: "Other",
     },
+    comments: [
+      {
+        userId: {
+          type: String,
+          required: true,
+        },
+        username: {
+          type: String,
+          required: true,
+        },
+        text: {
+          type: String,
+          required: true,
+          max: 500,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

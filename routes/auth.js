@@ -2,7 +2,7 @@ const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
+require("dotenv").config();
 
 // JWT Secret Key
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -24,18 +24,21 @@ router.post("/register", async (req, res) => {
     // Saving user and returning response
     const user = await newUser.save();
 
-    // Create JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // Create JWT (includes username in the payload)
+    const token = jwt.sign(
+      { id: user._id, email: user.email, username: user.username }, // Include username
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.status(200).json({ user, token });
   } catch (err) {
     console.error("Error registering user:", err);
-    res.status(500).json({ message: "Error registering user", error: err.message || err });
+    res
+      .status(500)
+      .json({ message: "Error registering user", error: err.message || err });
   }
 });
-
 
 // Login
 router.post("/login", async (req, res) => {
@@ -45,15 +48,20 @@ router.post("/login", async (req, res) => {
       return res.status(404).json("User not found");
     }
 
-    const validPassword = await bcrypt.compare(req.body.password, user.password);
+    const validPassword = await bcrypt.compare(
+      req.body.password,
+      user.password
+    );
     if (!validPassword) {
       return res.status(400).json("Wrong password");
     }
 
-    // Create JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // Create JWT (includes username in the payload)
+    const token = jwt.sign(
+      { id: user._id, email: user.email, username: user.username }, // Include username
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.status(200).json({ user, token });
   } catch (err) {

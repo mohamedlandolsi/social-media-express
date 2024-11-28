@@ -283,4 +283,77 @@ router.get("/search", verifyToken, async (req, res) => {
   }
 });
 
+// Add a comment to a post (Protected route)
+router.post("/:id/comment", verifyToken, async (req, res) => {
+  const { text } = req.body;
+
+  if (!text || !text.trim()) {
+    return res.status(400).json("Comment text is required");
+  }
+
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json("Post not found");
+    }
+
+    const comment = {
+      userId: req.user.id,
+      username: req.user.username, // Ensure the token includes the username or retrieve it from the User model
+      text: text.trim(),
+    };
+
+    post.comments.push(comment);
+    await post.save();
+
+    res.status(201).json({ message: "Comment added", comment });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Get all comments for a post (Public route)
+router.get("/:id/comments", async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json("Post not found");
+    }
+
+    res.status(200).json(post.comments);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Delete a comment (Protected route)
+router.delete("/:id/comment/:commentId", verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json("Post not found");
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+
+    if (!comment) {
+      return res.status(404).json("Comment not found");
+    }
+
+    if (comment.userId !== req.user.id) {
+      return res.status(403).json("You can only delete your own comments");
+    }
+
+    comment.remove();
+    await post.save();
+
+    res.status(200).json("Comment deleted");
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 module.exports = router;
