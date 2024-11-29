@@ -37,8 +37,8 @@ router.get("/search", verifyToken, async (req, res) => {
     // Define search criteria for users
     const searchCriteria = {
       $or: [
-        { username: { $regex: query, $options: "i" } }    // Case-insensitive search for name
-      ]
+        { username: { $regex: query, $options: "i" } }, // Case-insensitive search for name
+      ],
     };
 
     console.log("Executing user search query:", searchCriteria); // Log the query object
@@ -242,6 +242,46 @@ router.put(
   }
 );
 
+// Get all users for admin (Protected route for admin only)
+router.get("/admin/all", verifyToken, async (req, res) => {
+  if (req.user.isAdmin) {
+    try {
+      const users = await User.find().select("-password"); // Exclude passwords
+      res.status(200).json(users);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch users", error: err });
+    }
+  } else {
+    res.status(403).json("Access denied! Admins only.");
+  }
+});
 
+// Delete user as admin
+router.delete("/admin/:id", verifyToken, async (req, res) => {
+  if (req.user.isAdmin) {
+    try {
+      await User.findByIdAndDelete(req.params.id);
+      res.status(200).json("User has been deleted");
+    } catch (err) {
+      res.status(500).json({ message: "Error deleting user", error: err });
+    }
+  } else {
+    res.status(403).json("Access denied! Admins only.");
+  }
+});
+
+// Update user role or other details as admin
+router.put("/admin/:id", verifyToken, async (req, res) => {
+  if (req.user.isAdmin) {
+    try {
+      await User.findByIdAndUpdate(req.params.id, { $set: req.body });
+      res.status(200).json("User updated successfully");
+    } catch (err) {
+      res.status(500).json({ message: "Error updating user", error: err });
+    }
+  } else {
+    res.status(403).json("Access denied! Admins only.");
+  }
+});
 
 module.exports = router;
