@@ -11,17 +11,23 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to verify token (protects routes)
 const verifyToken = (req, res, next) => {
-  const token = req.header("Authorization");
-  if (!token) return res.status(401).json("Access Denied");
+  const authHeader = req.header("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json("Access Denied: No or invalid token provided");
+  }
 
+  const token = authHeader.split(" ")[1];
   try {
-    const verified = jwt.verify(token.split(" ")[1], JWT_SECRET);
-    req.user = verified;
+    const verified = jwt.verify(token, JWT_SECRET); // Decode the token
+    console.log("Decoded Token in Middleware:", verified); // Debugging log
+    req.user = verified; // Attach to req.user
     next();
   } catch (err) {
+    console.error("Token verification error:", err); // Log error details
     res.status(400).json("Invalid Token");
   }
 };
+
 
 //Search user
 router.get("/search", verifyToken, async (req, res) => {
@@ -108,19 +114,19 @@ router.put(
 );
 
 // Delete User (Protected route)
-router.delete("/:id", verifyToken, async (req, res) => {
-  if (req.user.id === req.params.id || req.user.isAdmin) {
-    // Delete the user
-    try {
-      await User.findByIdAndDelete(req.params.id);
-      res.status(200).json("Account has been deleted");
-    } catch (err) {
-      return res.status(500).json(err);
-    }
-  } else {
-    return res.status(403).json("You can only delete your own account!");
-  }
-});
+// router.delete("/:id", verifyToken, async (req, res) => {
+//   if (req.user.id === req.params.id || req.user.isAdmin) {
+//     // Delete the user
+//     try {
+//       await User.findByIdAndDelete(req.params.id);
+//       res.status(200).json("Account has been deleted");
+//     } catch (err) {
+//       return res.status(500).json(err);
+//     }
+//   } else {
+//     return res.status(403).json("You can only delete your own account!");
+//   }
+// });
 
 // Get a user (Public route)
 router.get("/:id", async (req, res) => {
@@ -283,5 +289,26 @@ router.put("/admin/:id", verifyToken, async (req, res) => {
     res.status(403).json("Access denied! Admins only.");
   }
 });
+
+// Delete user by admin
+router.delete("/admin", verifyToken, async (req, res) => {
+  if (req.user.isAdmin) {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    try {
+      // Your logic to delete the user goes here
+      await User.findByIdAndDelete(userId);
+      res.status(200).json({ message: "User deleted successfully!" });
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting user", error });
+    }
+  } else {
+    res.status(403).json("Access denied! Admins only.");
+  }
+});
+
 
 module.exports = router;

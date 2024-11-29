@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
 
     // Create JWT (includes username in the payload)
     const token = jwt.sign(
-      { id: user._id, email: user.email, username: user.username }, // Include username
+      { id: user._id, email: user.email, username: user.username, isAdmin: user.isAdmin }, // Include username
       JWT_SECRET,
       { expiresIn: "1h" }
     );
