@@ -242,24 +242,24 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
 router.get("/search", verifyToken, async (req, res) => {
   const { query, filter, sort } = req.query;
 
-  if (!query || typeof query !== "string") {
-    return res.status(400).json("Invalid or missing query string");
-  }
-
   try {
     const currentUser = await User.findById(req.user.id);
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    let searchCriteria = {
-      $or: [
+    // Build search criteria
+    let searchCriteria = {};
+
+    if (query && typeof query === "string") {
+      searchCriteria.$or = [
         { title: { $regex: query, $options: "i" } },
         { description: { $regex: query, $options: "i" } },
         { category: { $regex: query, $options: "i" } },
-      ],
-    };
+      ];
+    }
 
+    // Apply filter based on the `filter` parameter
     if (filter === "exclude-my-posts") {
       searchCriteria.userId = { $in: currentUser.followings };
     } else if (filter === "only-my-posts") {
@@ -278,7 +278,9 @@ router.get("/search", verifyToken, async (req, res) => {
       sortOption = { title: 1 }; // Default: ascending title
     }
 
+    // Fetch posts based on criteria and sort
     const posts = await Post.find(searchCriteria).sort(sortOption).select("-_id");
+
     res.status(200).json(posts);
   } catch (err) {
     res.status(500).json({ message: "Internal server error", error: err.message });
