@@ -279,7 +279,7 @@ router.get("/search", verifyToken, async (req, res) => {
     }
 
     // Fetch posts based on criteria and sort
-    const posts = await Post.find(searchCriteria).sort(sortOption).select("-_id");
+    const posts = await Post.find(searchCriteria).sort(sortOption);
 
     res.status(200).json(posts);
   } catch (err) {
