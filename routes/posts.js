@@ -75,6 +75,20 @@ router.post("/", verifyToken, upload.single("image"), async (req, res) => {
   }
 });
 
+// Fetch all posts (Public route)
+router.get("/all", async (req, res) => {
+  try {
+    const posts = await Post.find(); // Fetch all posts
+    if (!posts.length) {
+      return res.status(404).json("No posts found");
+    }
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error", error: err.message });
+  }
+});
+
+
 // Update a post (Protected route)
 router.put("/:id", verifyToken, upload.single("image"), async (req, res) => {
   const { title, category } = req.body;
