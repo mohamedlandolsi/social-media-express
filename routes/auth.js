@@ -44,12 +44,16 @@ router.post("/register", async (req, res) => {
 // Login
 router.post("/login", async (req, res) => {
   try {
-    // Check if the request contains either email or username
-    const { email, username, password } = req.body;
+    // Check if the request contains the usernameOrEmail field and password
+    const { usernameOrEmail, password } = req.body;
 
-    // Find the user by email or username
+    if (!usernameOrEmail || !password) {
+      return res.status(400).json("Please provide both username/email and password.");
+    }
+
+    // Find the user by username or email
     const user = await User.findOne({
-      $or: [{ email: email }, { username: username }],
+      $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
     });
 
     if (!user) {
@@ -81,11 +85,13 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
+    // Respond with the user details and token
     res.status(200).json({ user, token });
   } catch (err) {
     res.status(500).json({ message: "Error logging in", error: err });
   }
 });
+
 
 
 // Middleware to verify token and user status
