@@ -310,5 +310,38 @@ router.delete("/admin", verifyToken, async (req, res) => {
   }
 });
 
+// Update user status (Admin only)
+router.put("/admin/:id/status", verifyToken, async (req, res) => {
+  if (req.user.isAdmin) {
+    const { status } = req.body; // Get the status from the request body ('active' or 'inactive')
+
+    // Validate the status value
+    if (status !== 'active' && status !== 'inactive') {
+      return res.status(400).json("Invalid status. It must be 'active' or 'inactive'.");
+    }
+
+    try {
+      // Find the user and update the status
+      const updatedUser = await User.findByIdAndUpdate(
+        req.params.id,
+        { $set: { status } },
+        { new: true } // Return the updated user document
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json("User not found");
+      }
+
+      res.status(200).json(updatedUser); // Return the updated user
+    } catch (err) {
+      console.error("Error updating user status:", err);
+      res.status(500).json("Error updating user status");
+    }
+  } else {
+    res.status(403).json("Access denied! Admins only.");
+  }
+});
+
+
 
 module.exports = router;

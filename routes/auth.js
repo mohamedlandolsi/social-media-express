@@ -119,23 +119,4 @@ router.get("/protected", verifyToken, (req, res) => {
   res.status(200).json("This is a protected route");
 });
 
-// Admin route to toggle user status
-router.put("/toggle-status/:id", verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json("User not found");
-    }
-
-    // Toggle the user's status
-    user.status = user.status === "active" ? "inactive" : "active";
-    await user.save();
-
-    res.status(200).json(`User status updated to ${user.status}`);
-  } catch (err) {
-    res.status(500).json({ message: "Error updating user status", error: err });
-  }
-});
-
 module.exports = router;
