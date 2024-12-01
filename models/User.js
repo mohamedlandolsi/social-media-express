@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema(
       required: true,
       min: 6,
     },
+    status: { 
+      type: String, enum: ['active', 'inactive'], 
+      default: 'active' 
+    },
     profilePicture: {
       type: String,
       default: "",
