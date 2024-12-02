@@ -136,11 +136,12 @@ router.delete("/:id", verifyToken, async (req, res) => {
       return res.status(404).json("Post not found");
     }
 
-    if (post.userId === req.user.id) {
+    // Allow deletion if the user is the owner of the post or an admin
+    if (post.userId === req.user.id || req.user.isAdmin === true) {
       await post.deleteOne();
       res.status(200).json("The post has been deleted");
     } else {
-      res.status(403).json("You can only delete your own post");
+      res.status(403).json("You can only delete your own post or you need admin privileges");
     }
   } catch (err) {
     res.status(500).json(err);
